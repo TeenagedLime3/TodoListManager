@@ -8,9 +8,6 @@ public class Main {
     |  |  |
      */
 
-
-
-
     private final List<ToDoList> toDoLists = new ArrayList<>();
     private final Scanner scanner = new Scanner(System.in);
 
@@ -21,9 +18,9 @@ public class Main {
     public Main() {
         boolean running = true;
         while(running){
-            System.out.println("Enter 1 to create a new TODO list" +
-                    "\nEnter 2 to view an existing TODO list" /* +
-                             "\nEnter 3 to edit an existing TODO list" */);
+            System.out.println("Enter 1 to create a new To-Do list" +
+                               "\nEnter 2 to view an existing To-Do list" /* +
+                               "\nEnter 3 to edit an existing To-Do list" */);
             try{
                 int option = Integer.parseInt(scanner.nextLine());
 
@@ -45,14 +42,20 @@ public class Main {
     }
 
     public void createTodoList(){
-        System.out.println("What is the name of this TODO list?");
+        System.out.println("What is the name of this To-Do list? Enter an empty name to exit");
         String name = scanner.nextLine();
 
+        if(name.isEmpty()){
+             return;
+        }
+
         if(name.equalsIgnoreCase("completed") || name.equalsIgnoreCase("incomplete")){
-            System.err.println("You cannot name a TODO list 'completed' or 'incomplete'");
+            System.err.println("You cannot name a To-Do list 'completed' or 'incomplete'");
             createTodoList();
             return;
         }
+
+
 
         toDoLists.add(new ToDoList(name));
     }
@@ -60,17 +63,26 @@ public class Main {
     public void viewTodoList(){
 
         if (toDoLists.isEmpty()){
-            System.err.println("No TODO lists exist!");
+            System.err.println("No To-Do lists exist!");
             return;
         }
 
         System.out.println();
         for (int i = 0; i < toDoLists.size(); i++){
-            System.out.println((i + 1) + " -> " + toDoLists.get(i).getName());
+            System.out.println("To-Do List " + (i + 1) + " -> " + toDoLists.get(i).getName());
         }
 
-        System.out.println("\nPlease enter the number of the TODO list you wish to open, or enter 0 to exit");
-        int index = Integer.parseInt(scanner.nextLine()) - 1;
+        System.out.println("\nPlease enter the number of the To-Do list you wish to open, or enter 0 to exit");
+
+        String input = scanner.nextLine();
+
+        if(input.contains("0x")){
+            System.err.println("Stop being a smarty pants!");
+            viewTodoList();
+            return;
+        }
+
+        int index = Integer.parseInt(input) - 1;
 
         if(index == -1){
             return;
@@ -84,10 +96,12 @@ public class Main {
 
         //TODO make it so if the user enters it in hex they get told off for being too smart
 
+
+
         ToDoList toDoList = toDoLists.get(index);
 
         if (toDoList.getList().isEmpty()){
-            System.err.println("This TODO list is empty!");
+            System.err.println("This To-Do list is empty!");
             viewTodoList();
             return;
         }

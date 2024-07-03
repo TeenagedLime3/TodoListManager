@@ -40,7 +40,7 @@ public class Main {
                         editTodoList(createdToDoList);
                         break;
                     case 2:
-                        viewTodoList();
+                        viewTodoList(selectTodoList());
                         break;
                     case 3:
                         ToDoList toDoList = selectTodoList();
@@ -82,14 +82,14 @@ public class Main {
         return toDoList;
     }
 
-    public void viewTodoList(){
-        ToDoList toDoList = selectTodoList();
+    public void viewTodoList(ToDoList toDoList){
+
         if(toDoList == null){
             return;
         }
         if(toDoList.getList().isEmpty()){
             System.err.println("This To-Do list is empty!");
-            viewTodoList();
+            selectTodoList();
             return;
         }
         for (Item item : toDoList.getList()) {
@@ -132,19 +132,28 @@ public class Main {
     }
 
     public void printItemsInTable(ToDoList toDoList){
-        int longestItemSize = toDoList.longestItem();
-        if(longestItemSize > "Item name\t".length()) {
-            System.out.println("Item name\t" + " ".repeat(longestItemSize - "Item name\t".length()) + "Item Completion");
-        }
-        for (Item item : toDoList.getList()) {
-            System.out.println(item.getName() + "\t" + item.isCompleted());
+        if(!toDoList.getList().isEmpty()){
+            int longestItemSize = toDoList.longestItem();
+            if(longestItemSize > "Item name    ".length()) {
+                System.out.println("Item name" + " ".repeat(longestItemSize - "Item name".length() + 4) + "Item Completion"); //+4 is the gap between the two headings
+                for (Item item : toDoList.getList()) {
+                    System.out.println(item.getName() + " ".repeat(4) + item.isCompleted());
+                }
+
+            } else {
+                System.out.println("Item name    Item Completion");
+
+                for (Item item : toDoList.getList()) {
+                    System.out.println(item.getName() + " ".repeat(13 - item.getName().length()) + item.isCompleted());
+                }
+            }
         }
     }
 
     public void editTodoList(ToDoList toDoList){
         printItemsInTable(toDoList);
 
-        System.out.println("");
+        System.out.println();
 
         System.out.println("""
                  How do you wish to edit the To-Do list
@@ -174,9 +183,9 @@ public class Main {
                 editTodoList(toDoList);
                 break;
 
-            //case 3:
-            //    editItem();
-            //    editTodoList(toDoList);
+            case 3:
+                editItem(toDoList);
+                editTodoList(toDoList);
 
         }
     }
@@ -203,8 +212,6 @@ public class Main {
             return;
         }
 
-        //its kinda brokey
-
         if(BLOCKED_WORDS.contains(name)){
             System.err.println("\nThe name cannot contain those words, please try again with a different name :)\n");
             return;
@@ -229,8 +236,9 @@ public class Main {
         }
     }
 
-    public void editItem(ToDoList toDoList ){
+    public void editItem(ToDoList toDoList){
         System.out.println("Please enter the index of the item you wish to edit");
+        viewTodoList(toDoList);
 
 
     }

@@ -37,6 +37,16 @@ public class ToDoList {
         this.color = color;
     }
 
+    public boolean doesItemExist(String name){
+        for (Item item : this.list){
+            if(item.getName().equals(name)){
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public void addItem(Item item){
         this.list.add(item);
     }
@@ -44,7 +54,6 @@ public class ToDoList {
     public boolean removeItem(Item item){
         return this.list.remove(item);
     }
-
 
     //attempts to remove the item, if unsuccessful (i.e. the user enters an index that is higher than the max index
     public boolean removeItem(int index){
@@ -68,5 +77,4 @@ public class ToDoList {
         }
         return itemExists;
     }
-
 }

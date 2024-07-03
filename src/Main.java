@@ -19,19 +19,24 @@ public class Main {
 
 
     public Main() {
-        boolean running = true;
-        while(running){
+        while(true){
 
             try{
-                System.out.println("Enter 1 to create a new To-Do list" +
-                        "\nEnter 2 to view an existing To-Do list" +
-                        "\nEnter 3 to edit an existing To-Do list");
+                System.out.println("""
+                        
+                        MAIN MENU
+                        Enter 1 to create a new To-Do list
+                        Enter 2 to view an existing To-Do list
+                        Enter 3 to edit an existing To-Do list""");
 
                 int option = Integer.parseInt(scanner.nextLine());
 
                 switch(option){
                     case 1:
                         ToDoList createdToDoList = createTodoList();
+                        if(createdToDoList == null){
+                            break;
+                        }
                         editTodoList(createdToDoList);
                         break;
                     case 2:
@@ -54,6 +59,13 @@ public class Main {
     public ToDoList createTodoList(){
         System.out.println("What is the name of this To-Do list? Enter an empty name to exit");
         String name = scanner.nextLine();
+        try{ //test if the string can be converted to an int
+            Integer.parseInt(name);
+            return null;
+        } catch(NumberFormatException e) {
+
+        }
+
 
         if(name.isEmpty()){
              return null;
@@ -71,55 +83,18 @@ public class Main {
     }
 
     public void viewTodoList(){
-        if (toDoLists.isEmpty()){
-            System.err.println("No To-Do lists exist!");
+        ToDoList toDoList = selectTodoList();
+        if(toDoList == null){
             return;
         }
-
-        System.out.println();
-        for (int i = 0; i < toDoLists.size(); i++){
-            System.out.println("To-Do List " + (i + 1) + " -> " + toDoLists.get(i).getName());
-        }
-
-        System.out.println("\nPlease enter the number of the To-Do list you wish to open, or enter 0 to exit");
-
-        String input = scanner.nextLine();
-        if(input.contains("0x")){
-            System.err.println("Stop being a smarty pants!");
-            viewTodoList();
-            return;
-        }
-
-        int index = Integer.parseInt(input) - 1;
-        if(index == -1){
-            return;
-        }
-
-        if (index > toDoLists.size() - 1 || index < 0) {
-            System.err.println("Please enter a number between 1 and " + (toDoLists.size()));
-            viewTodoList();
-            return;
-        }
-
-        ToDoList toDoList = toDoLists.get(index);
-        if (toDoList.getList().isEmpty()){
+        if(toDoList.getList().isEmpty()){
             System.err.println("This To-Do list is empty!");
             viewTodoList();
             return;
         }
-
         for (Item item : toDoList.getList()) {
             System.out.println(item.getName() + "\t" + item.isCompleted());
         }
-    }
-
-    public Item findInTodoList(ToDoList toDoList, String query){
-        for (Item item : toDoList.getList()){
-            if (item.getName().equalsIgnoreCase(query)){
-                return item;
-            }
-        }
-        return null;
     }
 
     public ToDoList selectTodoList(){
@@ -137,8 +112,8 @@ public class Main {
 
         String input = scanner.nextLine();
         if(input.contains("0x")){
+            System.out.flush();
             System.err.println("Stop being a smarty pants!");
-            selectTodoList();
             return null;
         }
 
@@ -156,14 +131,27 @@ public class Main {
         return toDoLists.get(index);
     }
 
+    public void printItemsInTable(ToDoList toDoList){
+        int longestItemSize = toDoList.longestItem();
+        if(longestItemSize > "Item name\t".length()) {
+            System.out.println("Item name\t" + " ".repeat(longestItemSize - "Item name\t".length()) + "Item Completion");
+        }
+        for (Item item : toDoList.getList()) {
+            System.out.println(item.getName() + "\t" + item.isCompleted());
+        }
+    }
+
     public void editTodoList(ToDoList toDoList){
+        printItemsInTable(toDoList);
+
+        System.out.println("");
+
         System.out.println("""
-                How do you wish to edit the To-Do list
+                 How do you wish to edit the To-Do list
                  0 - exit
                  1 - add an item to the To-Do list
                  2 - remove an item from the To-Do list
-                 3 - edit an existing item in the To-Do list
-                """);
+                 3 - edit an existing item in the To-Do list""");
 
         int option;
         try{
@@ -223,7 +211,7 @@ public class Main {
         }
 
         Item item = new Item(name, false);
-        toDoList.getList().add(item);
+        toDoList.addItem(item);
         System.out.println("\nItem added!\n");
     }
 
@@ -231,7 +219,7 @@ public class Main {
         System.out.println("Please enter the name/index of the item to be removed item");
         name = scanner.nextLine();
 
-        if(!toDoList.doesItemExist(name)){
+        if(!toDoList.removeItem(name)){
             System.out.println("an item with this name does not exist, try again");
 
             List<ToDoList> found = existsOnAnotherTodoList(name);
@@ -239,9 +227,6 @@ public class Main {
                 System.out.println("This item exists in other To-Do list(s) named:");
             }
         }
-
-
-        toDoList.removeItem(name);
     }
 
     public void editItem(ToDoList toDoList ){

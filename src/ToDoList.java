@@ -51,8 +51,8 @@ public class ToDoList {
         this.list.add(item);
     }
 
-    public boolean removeItem(Item item){
-        return this.list.remove(item);
+    public void removeItem(Item item){
+        this.list.remove(item);
     }
 
     //attempts to remove the item, if unsuccessful (i.e. the user enters an index that is higher than the max index
@@ -60,7 +60,7 @@ public class ToDoList {
         try{
             this.list.remove(index - 1); //IMPORTANT: users enter 1 not 0 for the first element
             return true;
-        } catch (IndexOutOfBoundsException exception) { //if the user
+        } catch (IndexOutOfBoundsException exception) {
             return false;
         }
     }
@@ -69,12 +69,29 @@ public class ToDoList {
     //if the item doesn't exist (itemExists is false) the method returns false
     public boolean removeItem(String itemName){
         boolean itemExists = false;
+        Item itemFound = null;
         for(Item item : this.list){
+            System.out.println("DEBUG " + item.getName());
             if(item.getName().equals(itemName)){
-                this.removeItem(item);
+                itemFound = item;
                 itemExists = true;
+                break;
             }
         }
+        if(itemExists){
+            removeItem(itemFound);
+        }
+
         return itemExists;
+    }
+
+    public int longestItem(){
+        int longestItem = 0;
+        for (Item item : this.list){
+            if(item.getName().length() > longestItem){
+                longestItem = item.getName().length();
+            }
+        }
+        return longestItem;
     }
 }

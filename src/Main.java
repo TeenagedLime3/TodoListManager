@@ -92,9 +92,9 @@ public class Main {
             selectTodoList();
             return;
         }
-        for (Item item : toDoList.getList()) {
-            System.out.println(item.getName() + "\t" + item.isCompleted());
-        }
+
+        printItemsInTable(toDoList);
+
     }
 
     public ToDoList selectTodoList(){
@@ -134,18 +134,29 @@ public class Main {
     public void printItemsInTable(ToDoList toDoList){
         if(!toDoList.getList().isEmpty()){
             int longestItemSize = toDoList.longestItem();
+            List<Item> toDoListList = toDoList.getList(); //TODO CHANGE VARIABLE NAME
+
+            //TODO possible to have the same line print headings for both before if statement?
+            //TODO centering the index with numbers greater than 1 digit
             if(longestItemSize > "Item name    ".length()) {
-                System.out.println("Item name" + " ".repeat(longestItemSize - "Item name".length() + 4) + "Item Completion"); //+4 is the gap between the two headings
-                for (Item item : toDoList.getList()) {
-                    System.out.println(item.getName() + " ".repeat(4) + item.isCompleted());
+                System.out.println("Index    Item name" + " ".repeat(longestItemSize - "Item name".length() + 4) + "Item Completion"); //+4 is the gap between the two headings
+                for (int i = 0; i < toDoListList.size(); i++) {
+                    System.out.println("  " + (i + 1) + "      " + toDoListList.get(i).getName() + " ".repeat(4) + toDoListList.get(i).isCompleted());
                 }
+                /*for (Item item : toDoList.getList()) {
+                    System.out.println(item.getName() + " ".repeat(4) + item.isCompleted());
+                }*/
 
             } else {
-                System.out.println("Item name    Item Completion");
+                System.out.println("Index    Item name    Item Completion");
 
-                for (Item item : toDoList.getList()) {
-                    System.out.println(item.getName() + " ".repeat(13 - item.getName().length()) + item.isCompleted());
+                for (int i = 0; i < toDoListList.size(); i++) {
+                    System.out.println("  " + (i + 1) + "      " + toDoListList.get(i).getName() + " ".repeat(13 - toDoListList.get(i).getName().length()) + toDoListList.get(i).isCompleted());
                 }
+
+               /* for (Item item : toDoList.getList()) {
+                    System.out.println(item.getName() + " ".repeat(13 - item.getName().length()) + item.isCompleted());
+                }*/
             }
         }
     }
@@ -239,7 +250,5 @@ public class Main {
     public void editItem(ToDoList toDoList){
         System.out.println("Please enter the index of the item you wish to edit");
         viewTodoList(toDoList);
-
-
     }
 }

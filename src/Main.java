@@ -51,6 +51,7 @@ public class Main {
                         break;
                 }
             } catch(NumberFormatException ignored){
+                System.out.flush();
                 System.err.println("Please enter a number");
             }
         }
@@ -72,6 +73,7 @@ public class Main {
         }
 
         if(BLOCKED_WORDS.contains(name)){
+            System.out.flush();
             System.err.println("You cannot name a To-Do list 'completed' or 'incomplete'");
             createTodoList();
             return null;
@@ -88,6 +90,7 @@ public class Main {
             return;
         }
         if(toDoList.getList().isEmpty()){
+            System.out.flush();
             System.err.println("This To-Do list is empty!");
             selectTodoList();
             return;
@@ -99,6 +102,7 @@ public class Main {
 
     public ToDoList selectTodoList(){
         if (toDoLists.isEmpty()){
+            System.out.flush();
             System.err.println("No To-Do lists exist!");
             return null;
         }
@@ -123,6 +127,7 @@ public class Main {
         }
 
         if (index > toDoLists.size() - 1 || index < 0) {
+            System.out.flush();
             System.err.println("Please enter a number between 1 and " + (toDoLists.size()));
             selectTodoList();
             return null;
@@ -167,16 +172,18 @@ public class Main {
         System.out.println();
 
         System.out.println("""
-                 How do you wish to edit the To-Do list
+                 EDIT TODO LIST
                  0 - exit
                  1 - add an item to the To-Do list
                  2 - remove an item from the To-Do list
-                 3 - edit an existing item in the To-Do list""");
+                 3 - edit an existing item in the To-Do list
+                 4 - batch edit items from a To-Do list""");
 
         int option;
         try{
             option = Integer.parseInt(scanner.nextLine());
         } catch(NumberFormatException ignored){
+            System.out.flush();
             System.err.println("Please enter a number");
             editTodoList(toDoList);
             return;
@@ -193,10 +200,22 @@ public class Main {
                 removeItem(toDoList,"");
                 editTodoList(toDoList);
                 break;
-
             case 3:
-                editItem(toDoList);
+                Item foundItem;
+
+                //Exception in thread "main" java.lang.NullPointerException: Cannot invoke "Item.getName()" because "item" is null
+                //	at Main.editItem(Main.java:282)
+                //	at Main.editTodoList(Main.java:204)
+                //	at Main.editTodoList(Main.java:197)
+                //	at Main.<init>(Main.java:40)
+                //	at Main.main(Main.java:17)
+                // when findCorrectItem is null (if an item by the name entered does not exist)
+                if(findCorrectItem(toDoList) == null){
+                    findCorrectItem(toDoList);
+                }
+                editItem(findCorrectItem(toDoList)); //findCorrectItem returns the item to be edited which editItem uses
                 editTodoList(toDoList);
+                break;
 
         }
     }
@@ -218,12 +237,14 @@ public class Main {
         name = scanner.nextLine();
 
         if(toDoList.doesItemExist(name)){
+            System.out.flush();
             System.err.println("An item with this name already exists!");
             addItem(toDoList, name);
             return;
         }
 
         if(BLOCKED_WORDS.contains(name)){
+            System.out.flush();
             System.err.println("\nThe name cannot contain those words, please try again with a different name :)\n");
             return;
         }
@@ -237,7 +258,7 @@ public class Main {
         System.out.println("Please enter the name/index of the item to be removed item");
         name = scanner.nextLine();
 
-        if(!toDoList.removeItem(name)){
+        if(!toDoList.removeItem(name)){ //TODO fix this so it works with index too
             System.out.println("an item with this name does not exist, try again");
 
             List<ToDoList> found = existsOnAnotherTodoList(name);
@@ -247,8 +268,91 @@ public class Main {
         }
     }
 
-    public void editItem(ToDoList toDoList){
-        System.out.println("Please enter the index of the item you wish to edit");
+    public Item findCorrectItem(ToDoList toDoList){
+        System.out.println("Please enter the index/name of the item you wish to edit");
         viewTodoList(toDoList);
+        String input = scanner.nextLine();
+        if(!toDoList.doesItemExist(input)){
+            System.out.println("An item by that name does not exist, please try again or use the item index instead");
+            findCorrectItem(toDoList);
+            //return null; this breaks, can do without?
+        }
+        try{
+            int index = Integer.parseInt(input);
+            return toDoList.getList().get(index - 1); //the table starts at 1, 0 is the first item in the list :)
+        } catch (NumberFormatException e){
+            String name = input;
+            for(Item item : toDoList.getList()){
+                if(item.getName().equals(name)){
+                    return item;
+                }
+            }
+        }
+        return null; //should never be called as code checks if an item by the entered name exists
+    }
+
+    public void editItem(Item item){
+
+        System.out.println("how do you wish to edit " + item.getName() + "?");
+        System.out.println("""
+                 0 - back
+                 1 - change the name
+                 2 - change the completion
+                 """);
+
+        int option;
+        try{
+            option = Integer.parseInt(scanner.nextLine());
+        } catch (NumberFormatException e){
+            System.out.println("Please enter a number");
+            editItem(item);
+            return;
+        }
+
+        switch (option){
+            case 0:
+                return;
+            case 1:
+                changeItemName(item);
+                break;
+            case 2:
+                changeItemCompletion(item);
+                break;
+
+        }
+    }
+    
+    public void changeItemName(Item item){
+        System.out.println("Please enter the new name of the item:");
+        String newName = scanner.nextLine();
+        try{ //test if the string can be converted to an int
+            Integer.parseInt(newName);
+            System.out.println("Please do not name the item only a number");
+            changeItemName(item);
+            return; //might not need?
+        } catch(NumberFormatException e) {
+            item.setName(newName);
+            return;
+        }
+    }
+    public void changeItemCompletion(Item item){
+        System.out.println("Please enter whether the item is completed or not");
+        String itemCompletion = scanner.nextLine().toLowerCase();
+
+        if (itemCompletion.equals("completed") ||
+        itemCompletion.equals("done") ||
+        itemCompletion.equals("true")){
+            item.setCompleted(true);
+
+        } else if (itemCompletion.equals("incomplete") ||
+        itemCompletion.equals("not completed") ||
+        itemCompletion.equals("not complete") ||
+        itemCompletion.equals("false")){
+            item.setCompleted(false);
+
+        } else {
+            System.out.println("Please enter completed or incomplete");
+            changeItemName(item);
+        }
     }
 }

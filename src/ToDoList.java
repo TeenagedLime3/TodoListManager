@@ -56,13 +56,8 @@ public class ToDoList {
     }
 
     //attempts to remove the item, if unsuccessful (i.e. the user enters an index that is higher than the max index
-    public boolean removeItem(int index){
-        try{
-            this.list.remove(index - 1); //IMPORTANT: users enter 1 not 0 for the first element
-            return true;
-        } catch (IndexOutOfBoundsException exception) {
-            return false;
-        }
+    public void removeItem(int index){
+        this.list.remove(index - 1); //IMPORTANT: users enter 1 not 0 for the first element
     }
 
     //checks each item in the list, if it exists sets the flag itemExists to true and removes it
@@ -71,7 +66,6 @@ public class ToDoList {
         boolean itemExists = false;
         Item itemFound = null;
         for(Item item : this.list){
-            System.out.println("DEBUG " + item.getName());
             if(item.getName().equals(itemName)){
                 itemFound = item;
                 itemExists = true;

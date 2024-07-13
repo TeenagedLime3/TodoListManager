@@ -13,6 +13,9 @@ public class Main {
     private final List<ToDoList> toDoLists = new ArrayList<>();
     private final Scanner scanner = new Scanner(System.in);
 
+    public static final String ANSI_RESET = "\u001B[0m";
+    public static final String ANSI_RED = "\u001B[91m";
+
     public static void main(String[] args) {
         Main main = new Main();
     }
@@ -51,9 +54,13 @@ public class Main {
                         break;
                 }
             } catch(NumberFormatException ignored){
-                System.err.println("Please enter a number");
+                printError("Please enter a number");
             }
         }
+    }
+
+    public static void printError(String text){
+        System.out.println(ANSI_RED + text + ANSI_RESET);
     }
 
     public static boolean isInt(String input){
@@ -65,6 +72,7 @@ public class Main {
         }
     }
 
+
     public ToDoList createTodoList(){
         System.out.println("What is the name of this To-Do list? Enter an empty name to exit");
         String name = scanner.nextLine();
@@ -74,8 +82,8 @@ public class Main {
             }
 
             if(BLOCKED_WORDS.contains(name)){
-                System.err.println("You cannot name a To-Do list 'completed' or 'incomplete'");
-                createTodoList();
+                printError("You cannot name a To-Do list 'completed' or 'incomplete'");
+                createTodoList(); // found another bug
                 return null;
             }
             ToDoList toDoList = new ToDoList(name);
@@ -83,8 +91,8 @@ public class Main {
 
             return toDoList;
         } else {
-            System.out.println("Please enter a string, not a number");
-            createTodoList();
+            printError("Please enter a string, not a number");
+            createTodoList(); // found another bug
             return null;
         }
     }
@@ -94,8 +102,8 @@ public class Main {
             return;
         }
         if(toDoList.getList().isEmpty()){
-            System.err.println("This To-Do list is empty!");
-            selectTodoList();
+            printError("This To-Do list is empty!");
+            viewTodoList(selectTodoList());
             return;
         }
 
@@ -104,9 +112,10 @@ public class Main {
     }
 
     public ToDoList selectTodoList(){
+        System.out.println(toDoLists);
         if (toDoLists.isEmpty()){
-            System.err.println("No To-Do lists exist!");
-            return selectTodoList();
+            printError("No To-Do lists exist!");
+            return null;
         }
 
         System.out.println();
@@ -118,18 +127,18 @@ public class Main {
 
         String input = scanner.nextLine();
         if(input.contains("0x")){
-            System.err.println("Stop being a smarty pants!");
+            printError("Stop being a smarty pants!");
             return selectTodoList();
         }
 
         try { //keep try catch as it is being converted to an int, not checking for variable type like isInt does
             int index = Integer.parseInt(input) - 1;
             if (index == -1) {
-                return selectTodoList();
+                return null;
             }
 
             if (index > toDoLists.size() - 1 || index < 0) {
-                System.err.println("Please enter a number between 1 and " + (toDoLists.size()));
+                printError("Please enter a number between 1 and " + (toDoLists.size()));
                 return selectTodoList();
             }
 
@@ -192,7 +201,7 @@ public class Main {
         try{
             option = Integer.parseInt(scanner.nextLine());
         } catch(NumberFormatException ignored){
-            System.err.println("Please enter a number");
+            printError("Please enter a number");
             editTodoList(toDoList);
             return;
         }
@@ -245,13 +254,13 @@ public class Main {
         }
 
         if(toDoList.doesItemExist(name)){
-            System.err.println("An item with this name already exists!");
+            printError("An item with this name already exists!");
             addItem(toDoList);
             return;
         }
 
         if(BLOCKED_WORDS.contains(name)){
-            System.err.println("\nThe name cannot contain those words, please try again with a different name :)\n");
+            printError("\nThe name cannot contain those words, please try again with a different name :)\n");
             addItem(toDoList);
             return;
         }
@@ -262,6 +271,11 @@ public class Main {
     }
 
     public void removeItem(ToDoList toDoList){
+        if(toDoList.getList().isEmpty()){
+            printError("This To-Do list is empty!");
+            return;
+        }
+
         System.out.println("Please enter the name/index of the item to be removed item, or empty to exit");
         String input = scanner.nextLine();
 

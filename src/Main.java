@@ -1,5 +1,6 @@
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Scanner;
 
 public class Main {
@@ -8,7 +9,7 @@ public class Main {
     |  |  |
      */
 
-    private static final List<String> BLOCKED_WORDS = List.of("completed", "incomplete", "exit");
+    private static final List<String> BLOCKED_WORDS = List.of("complete", "completed", "incomplete", "exit");
 
     private final List<ToDoList> toDoLists = new ArrayList<>();
     private final Scanner scanner = new Scanner(System.in);
@@ -21,6 +22,7 @@ public class Main {
     }
 
 
+    //shows the main menu and lets the user select how they want to edit the to-do lists
     public Main() {
         while(true){
 
@@ -74,17 +76,16 @@ public class Main {
 
 
     public ToDoList createTodoList(){
-        System.out.println("What is the name of this To-Do list? Enter an empty name to exit");
+        System.out.println("What is the name of this To-Do list? Enter an empty string to exit");
         String name = scanner.nextLine();
         if(!isInt(name)){
             if(name.isEmpty()){
                 return null;
             }
 
-            if(BLOCKED_WORDS.contains(name)){
+            if(BLOCKED_WORDS.contains(name.toLowerCase())){
                 printError("You cannot name a To-Do list 'completed' or 'incomplete'");
-                createTodoList(); // found another bug
-                return null;
+                return createTodoList();
             }
             ToDoList toDoList = new ToDoList(name);
             toDoLists.add(toDoList);
@@ -92,8 +93,7 @@ public class Main {
             return toDoList;
         } else {
             printError("Please enter a string, not a number");
-            createTodoList(); // found another bug
-            return null;
+            return createTodoList();
         }
     }
 
@@ -112,7 +112,6 @@ public class Main {
     }
 
     public ToDoList selectTodoList(){
-        System.out.println(toDoLists);
         if (toDoLists.isEmpty()){
             printError("No To-Do lists exist!");
             return null;
@@ -193,9 +192,13 @@ public class Main {
         System.out.println("""
                  EDIT TODO LIST
                  0 - exit
-                 1 - add an item to the To-Do list
+                 1 - add an item to the To-Do list""");
+
+        if(!toDoList.getList().isEmpty()){
+            System.out.println("""
                  2 - remove an item from the To-Do list
                  3 - edit an existing item in the To-Do list""");
+        }
 
         int option;
         try{
@@ -214,21 +217,32 @@ public class Main {
                 editTodoList(toDoList);
                 break;
             case 2:
-                removeItem(toDoList);
+                if(!toDoList.getList().isEmpty()){
+                    removeItem(toDoList);
+                }
                 editTodoList(toDoList);
                 break;
             case 3:
-                Item foundItem;
+                if(!toDoList.getList().isEmpty()){
+                    Item foundItem;
 
-                while(true){
-                    foundItem = findCorrectItem(toDoList);
-                    if(foundItem == null){
-                        continue;
+                    while(true){
+                        foundItem = findCorrectItem(toDoList);
+                        if(foundItem == null){
+                            continue;
+                        }
+                        break;
+
                     }
-                    break;
 
+                    editItem(foundItem, toDoList);
+                } else {
+                    editTodoList(toDoList);
                 }
-                editItem(foundItem, toDoList);
+                break;
+            default:
+                System.out.println("Please enter a number between 1 and 3");
+                editTodoList(toDoList);
                 break;
         }
     }
@@ -246,10 +260,16 @@ public class Main {
 
 
     public void addItem(ToDoList toDoList){
-        System.out.println("Please enter the name of the new item, or empty to exit");
+        System.out.println("Please enter the name of the new item, or an empty string to exit");
         String name = scanner.nextLine();
 
         if(name.isEmpty()){
+            return;
+        }
+
+        if(isInt(name)){
+            printError("An item cannot be called just an integer!");
+            addItem(toDoList);
             return;
         }
 
@@ -260,7 +280,7 @@ public class Main {
         }
 
         if(BLOCKED_WORDS.contains(name)){
-            printError("\nThe name cannot contain those words, please try again with a different name :)\n");
+            printError("\nThe name cannot contain those words, please try again with a different name\n");
             addItem(toDoList);
             return;
         }
@@ -276,18 +296,25 @@ public class Main {
             return;
         }
 
-        System.out.println("Please enter the name/index of the item to be removed item, or empty to exit");
+        System.out.println("Please enter the name/index of the item to be removed item, or an empty string to exit");
         String input = scanner.nextLine();
 
         if(input.isEmpty()){
             return;
         }
 
+
+
         if(isInt(input)){
+            if(Integer.parseInt(input) > toDoList.getList().size() || Integer.parseInt(input) <= 0){
+                printError("please enter a number between 1 and " + toDoList.getList().size() + "\n");
+                removeItem(toDoList);
+                return;
+            }
             toDoList.removeItem(Integer.parseInt(input)); //minuses one in the ToDoList class so not needed here
         } else {
             if(!toDoList.removeItem(input)){ //TODO fix this so it works with index too
-                System.out.println("an item with this name does not exist, try again");
+                printError("an item with this name does not exist, try again");
 
                 List<ToDoList> found = existsOnAnotherTodoList(input);
                 if(!found.isEmpty()) {
@@ -312,14 +339,14 @@ public class Main {
         try{
             int index = Integer.parseInt(input);
 
-            if(index > toDoList.getList().size()){
-                return null;
+            if(index > toDoList.getList().size() || Integer.parseInt(input) <= 0){
+                printError("please enter a number between 1 and " + toDoList.getList().size() + "\n");
+                return findCorrectItem(toDoList);
             }
             return toDoList.getList().get(index - 1); //the table starts at 1, 0 is the first item in the list :)
         } catch (NumberFormatException e){
             if(!toDoList.doesItemExist(input)){
-                findCorrectItem(toDoList);
-                return null;
+                return findCorrectItem(toDoList);
             }
             for(Item item : toDoList.getList()){
                 if(item.getName().equals(input)){
@@ -350,48 +377,42 @@ public class Main {
 
         switch (option){
             case 0:
+                editTodoList(toDoList);
                 return;
             case 1:
-                changeItemName(item);
+                changeItemName(item, toDoList);
                 editTodoList(toDoList);
                 break;
             case 2:
                 changeItemCompletion(item);
                 editTodoList(toDoList);
+                return;
+            default:
+                editItem(item, toDoList);
         }
     }
     
-    public void changeItemName(Item item){
+    public void changeItemName(Item item, ToDoList toDoList){
         System.out.println("Please enter the new name of the item:");
         String newName = scanner.nextLine();
         try{ //test if the string can be converted to an int
             Integer.parseInt(newName);
             System.out.println("Please do not name the item only a number");
-            changeItemName(item);
+            changeItemName(item, toDoList);
         } catch(NumberFormatException e) {
+            if(BLOCKED_WORDS.contains(newName.toLowerCase())) {
+                printError("\nThe name cannot contain those words, please try again with a different name\n");
+                changeItemName(item, toDoList);
+                return;
+            }
+            if(toDoList.doesItemExist(newName)){
+                System.out.println("This name already exists, try again with a different name");
+                changeItemName(item, toDoList);
+                return;
+            }
             item.setName(newName);
         }
     }
-    //TODO AI suggested fix for this bad practice
-//    public void changeItemName(Item item) {
-//        String newName;
-//        boolean isValidName;
-//        do {
-//            System.out.println("Please enter the new name of the item:");
-//            newName = scanner.nextLine();
-//            isValidName = true;
-//
-//            try {
-//                Integer.parseInt(newName);
-//                System.out.println("Please do not name the item only a number");
-//                isValidName = false;
-//            } catch (NumberFormatException e) {
-//                // If an exception is thrown, it means the name is not a number, which is valid
-//            }
-//        } while (!isValidName);
-//
-//        item.setName(newName);
-//    }
 
     public void changeItemCompletion(Item item){
         System.out.println("Please enter whether the item is completed or not");
@@ -410,7 +431,7 @@ public class Main {
 
         } else {
             System.out.println("Please enter completed or incomplete");
-            changeItemName(item);
+            changeItemCompletion(item);
         }
     }
 }

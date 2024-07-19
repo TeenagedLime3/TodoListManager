@@ -1,12 +1,12 @@
 import java.util.ArrayList;
 
-public class ToDoList {
+public class TodoList {
     private String name;
     private final ArrayList<Item> list = new ArrayList<>();
     private String color;
 
     //constructor
-    public ToDoList(String name){
+    public TodoList(String name){
         this.name = name;
     }
 

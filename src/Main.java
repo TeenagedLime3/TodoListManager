@@ -1,5 +1,6 @@
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
@@ -12,20 +13,16 @@ public class Main {
     |  |  |
      */
 
-    private static final List<String> BLOCKED_WORDS = List.of("complete", "completed", "incomplete", "exit");
+    private static final List<String> BLOCKED_WORDS = List.of("complete", "completed", "incomplete", "exit", "index");
 
-    private final List<TodoList> todoLists = new ArrayList<>();
+    private final List<TodoList> toDoLists = new ArrayList<>();
     private final Scanner scanner = new Scanner(System.in);
-
-    public static final String ANSI_RESET = "\u001B[0m";
-    public static final String ANSI_RED = "\u001B[91m";
 
     public static final Path indexFile = Path.of("To Do Lists/index.csv");
 
     public static void main(String[] args) {
-        Main main = new Main();
+        new Main();
     }
-
 
     //shows the main menu and lets the user select how they want to edit the To-Do lists
     public Main() {
@@ -43,7 +40,7 @@ public class Main {
 
                 switch (option) {
                     case 1:
-                        TodoList createdTodoList = createTodoList(null);
+                        TodoList createdTodoList = createTodoList(null, AnsiColor.valueOf("DEFAULT"));
                         if(createdTodoList == null){
                             break;
                         }
@@ -70,7 +67,7 @@ public class Main {
     // UTILITY METHODS
 
     public static void printError(String text) {
-        System.out.println(ANSI_RED + text + ANSI_RESET);
+        System.out.println(AnsiColor.RED.getCode() + text + AnsiColor.RESET.getCode());
     }
 
     public static boolean isInt(String input) {
@@ -85,10 +82,19 @@ public class Main {
     // CREATING AND MANAGING To-Do LISTS
 
     public boolean isValidName(String name){
-        if (BLOCKED_WORDS.contains(name.toLowerCase())) {
-            printError("You cannot name a To-Do list 'completed' or 'incomplete'");
+        if (BLOCKED_WORDS.contains(name.toLowerCase()) || name.contains("/") || name.contains("\\")) {
+            printError("You cannot name a To-Do list complete, completed, incomplete, exit or index, or contain slashes of any kind");
             return false;
         }
+
+        //checks if the file can be made without causing errors, characters such as " cannot be in a file name in windows
+        try{
+            Path ignored = Path.of("To Do Lists/" + name + ".csv");
+        } catch (InvalidPathException e){
+            printError("This name is invalid, please use another name");
+            return false;
+        }
+
 
         if (isInt(name)) {
             printError("Please enter a string, not a number");
@@ -97,7 +103,8 @@ public class Main {
 
         return true;
     }
-    public TodoList createTodoList(String name){
+
+    public TodoList createTodoList(String name, AnsiColor color){
         if(name == null){
             System.out.println("What is the name of this To-Do list? Enter an empty string to exit");
             name = scanner.nextLine();
@@ -107,12 +114,44 @@ public class Main {
             return null;
         }
 
-        if(isValidName(name)){
-            TodoList toDoList = new TodoList(name);
-            todoLists.add(toDoList);
+        for(TodoList todoList : toDoLists){
+            if(todoList.getName().equalsIgnoreCase(name)){
+                printError("A To-Do list with this name already exists, please enter a new name\n");
+                return createTodoList(null, color);
+            }
+        }
+
+        if(isValidName(name) && !name.contains("/") && !name.contains("\\")){
+            TodoList toDoList = new TodoList(name, color);
+            toDoLists.add(toDoList);
+            saveAllTodoLists();
             return toDoList;
         } else {
-            return createTodoList(null);
+            return createTodoList(null, AnsiColor.DEFAULT);
+        }
+    }
+
+    public void setTodolistColor(TodoList toDoList){
+        for(AnsiColor color : AnsiColor.values()){
+            if(color == AnsiColor.RESET || color == AnsiColor.DEFAULT){
+                continue;
+            }
+            System.out.print(color.getCode() + color.name() + AnsiColor.RESET.getCode() + " ");
+        }
+
+        System.out.println("\nPlease enter a color, enter empty for default");
+        String color = scanner.nextLine();
+
+        try {
+            AnsiColor ansiColor = AnsiColor.valueOf(color.toUpperCase().trim());
+            if(ansiColor == AnsiColor.RESET || ansiColor == AnsiColor.DEFAULT){
+                throw new IllegalArgumentException();
+            }
+
+            toDoList.setColor(ansiColor);
+            saveAllTodoLists();
+        } catch (IllegalArgumentException e){
+            setTodolistColor(toDoList);
         }
     }
 
@@ -131,17 +170,17 @@ public class Main {
     }
 
     public TodoList selectTodoList() {
-        if (todoLists.isEmpty()) {
+        if (toDoLists.isEmpty()) {
             printError("No To-Do lists exist!");
             return null;
         }
 
         System.out.println();
-        for (int i = 0; i < todoLists.size(); i++) {
-            System.out.println("To-Do List " + (i + 1) + " -> " + todoLists.get(i).getName());
+        for (int i = 0; i < toDoLists.size(); i++) {
+            System.out.println("To-Do List " + (i + 1) + " -> " + toDoLists.get(i).getColor().getCode() + toDoLists.get(i).getName() + AnsiColor.RESET.getCode());
         }
 
-        System.out.println("\nPlease enter the number of the To-Do list you wish to edit, or enter 0 to exit");
+        System.out.println("\nPlease enter the number of the To-Do list you wish to view/edit, or enter 0 to exit");
 
         String input = scanner.nextLine();
         if (input.contains("0x")) {
@@ -155,14 +194,14 @@ public class Main {
                 return null;
             }
 
-            if (index > todoLists.size() - 1 || index < 0) {
-                printError("Please enter a number between 1 and " + (todoLists.size()));
+            if (index > toDoLists.size() - 1 || index < 0) {
+                printError("Please enter a number between 1 and " + (toDoLists.size()));
                 return selectTodoList();
             }
 
-            return todoLists.get(index);
+            return toDoLists.get(index);
         } catch (NumberFormatException ignored) {
-            System.out.println("Please enter a number");
+            printError("Please enter a number");
             return selectTodoList();
         }
     }
@@ -213,12 +252,13 @@ public class Main {
         System.out.println("""
                 EDIT TODO LIST
                 0 - exit
-                1 - add an item to the To-Do list""");
+                1 - add an item to the To-Do list
+                2 - edit To-Do list colour""");
 
         if (!toDoList.getList().isEmpty()) {
             System.out.println("""
-                    2 - remove an item from the To-Do list
-                    3 - edit an existing item in the To-Do list""");
+                    3 - remove an item from the To-Do list
+                    4 - edit an existing item in the To-Do list""");
         }
 
         int option;
@@ -243,13 +283,16 @@ public class Main {
                 editTodoList(toDoList);
                 break;
             case 2:
+                setTodolistColor(toDoList);
+                break;
+            case 3:
                 if (!toDoList.getList().isEmpty()) {
                     removeItem(toDoList);
                     saveAllTodoLists();
                 }
                 editTodoList(toDoList);
                 break;
-            case 3:
+            case 4:
                 if (!toDoList.getList().isEmpty()) {
                     Item foundItem;
 
@@ -259,7 +302,6 @@ public class Main {
                             continue;
                         }
                         break;
-
                     }
 
                     editItem(foundItem, toDoList);
@@ -270,7 +312,7 @@ public class Main {
                 }
                 break;
             default:
-                System.out.println("Please enter a number between 1 and 3");
+                printError("Please enter a number between 1 and 3");
                 editTodoList(toDoList);
                 break;
         }
@@ -278,15 +320,13 @@ public class Main {
 
     public List<TodoList> existsOnAnotherTodoList(String name) {
         List<TodoList> matchingTodoLists = new ArrayList<>();
-        for (TodoList toDoList : todoLists) {
+        for (TodoList toDoList : toDoLists) {
             if (toDoList.doesItemExist(name)) {
                 matchingTodoLists.add(toDoList);
             }
         }
-
         return matchingTodoLists;
     }
-
 
     public void addItem(TodoList toDoList, String name, boolean completion) {
         if (name.isEmpty()) {
@@ -345,11 +385,11 @@ public class Main {
 
                 List<TodoList> found = existsOnAnotherTodoList(input);
                 if (!found.isEmpty()) {
-                    System.out.println("This item exists in other To-Do list(s) named:");
-                    for (TodoList todoListChecking : todoLists) {
-                        for (Item item : todoListChecking.getList()) {
+                    printError("This item exists in other To-Do list(s) named:");
+                    for (TodoList toDoListChecking : toDoLists) {
+                        for (Item item : toDoListChecking.getList()) {
                             if (item.getName().equals(input)) {
-                                System.out.println(todoListChecking.getName());
+                                System.out.println(toDoListChecking.getName());
                             }
                         }
                     }
@@ -398,7 +438,7 @@ public class Main {
         try {
             option = Integer.parseInt(scanner.nextLine());
         } catch (NumberFormatException e) {
-            System.out.println("Please enter a number");
+            printError("Please enter a number");
             editItem(item, toDoList);
             saveAllTodoLists();
             return;
@@ -426,7 +466,7 @@ public class Main {
         String newName = scanner.nextLine();
         try { //test if the string can be converted to an int
             Integer.parseInt(newName);
-            System.out.println("Please do not name the item only a number");
+            printError("Please do not name the item only a number");
             changeItemName(item, toDoList);
         } catch (NumberFormatException e) {
             if (BLOCKED_WORDS.contains(newName.toLowerCase())) {
@@ -435,7 +475,7 @@ public class Main {
                 return;
             }
             if (toDoList.doesItemExist(newName)) {
-                System.out.println("This name already exists, try again with a different name");
+                printError("This name already exists, try again with a different name");
                 changeItemName(item, toDoList);
                 return;
             }
@@ -460,7 +500,7 @@ public class Main {
             item.setCompleted(false);
 
         } else {
-            System.out.println("Please enter completed or incomplete");
+            printError("Please enter completed or incomplete");
             changeItemCompletion(item);
         }
         saveAllTodoLists();
@@ -489,7 +529,8 @@ public class Main {
         for(int i = 1; i < lines.size(); i++){ //i = 1 to skip the first line as it's the heading of the table
             String[] seperatedList = lines.get(i).split(",");
             String fileName = seperatedList[0];
-            TodoList toDoList = createTodoList(fileName);
+            String color = seperatedList[1];
+            TodoList toDoList = createTodoList(fileName, AnsiColor.valueOf(color));
 
             Path file = Path.of("To Do Lists/" + fileName + ".csv");
 
@@ -542,28 +583,27 @@ public class Main {
             printError("Error writing to file\n" + e.getMessage());
         }
 
-        for(TodoList todoList : todoLists){
-            saveTodoListToFile(todoList);
+        for(TodoList toDoList : toDoLists){
+            saveTodoListToFile(toDoList);
         }
     }
 
     public void saveTodoListToFile(TodoList toDoList){
-        Path todoListFile = Path.of("To Do Lists/" + toDoList.getName() + ".csv"); //create To-Do list file
+        Path toDoListFile = Path.of("To Do Lists/" + toDoList.getName() + ".csv"); //create To-Do list file
 
         //adding the To-Do list to the index
 
         try{
-            Files.writeString(indexFile, "\n" + toDoList.getName(), StandardOpenOption.APPEND); // StandardOpenOption.APPEND means the file is appended rather than overwritten
-            Files.writeString(todoListFile, "Name,Completion");
+            Files.writeString(indexFile, "\n" + toDoList.getName() + "," + toDoList.getColor(), StandardOpenOption.APPEND); // StandardOpenOption.APPEND means the file is appended rather than overwritten
+            Files.writeString(toDoListFile, "Name,Completion");
             //TODO add color here when To-Do list color has been implemented
         } catch (IOException e){
             printError("Error writing to file\n" + e.getMessage());
         }
 
-
         for(Item item : toDoList.getList()){
             try{
-                Files.writeString(todoListFile, "\n" + item.getName() + "," + item.isCompleted(), StandardOpenOption.APPEND);
+                Files.writeString(toDoListFile, "\n" + item.getName() + "," + item.isCompleted(), StandardOpenOption.APPEND);
             } catch (IOException e){
                 printError("Error writing to file\n" + e.getMessage());
             }

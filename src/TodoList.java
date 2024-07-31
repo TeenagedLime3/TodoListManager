@@ -3,11 +3,16 @@ import java.util.ArrayList;
 public class TodoList {
     private String name;
     private final ArrayList<Item> list = new ArrayList<>();
-    private String color;
+    private AnsiColor color;
 
     //constructor
     public TodoList(String name){
         this.name = name;
+    }
+
+    public TodoList(String name, AnsiColor color){
+        this.name = name;
+        this.color = color;
     }
 
     //getters
@@ -17,6 +22,10 @@ public class TodoList {
 
     public ArrayList<Item> getList(){
         return this.list;
+    }
+
+    public AnsiColor getColor(){
+        return this.color;
     }
 
     public int getIndexFromName(String queryString){
@@ -33,7 +42,7 @@ public class TodoList {
         this.name = name;
     }
 
-    public void setColor(String color){
+    public void setColor(AnsiColor color){
         this.color = color;
     }
 

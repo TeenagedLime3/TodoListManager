@@ -1,2 +1,2 @@
-Todo List Name, Colour, TBC: Category, Urgency
-list1,DEFAULT
+Todo List Name, Colour, Pinned
+list,DEFAULT,false

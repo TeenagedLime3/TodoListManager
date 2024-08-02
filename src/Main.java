@@ -20,17 +20,20 @@ public class Main {
 
     public static final Path indexFile = Path.of("To Do Lists/index.csv");
 
+
     public static void main(String[] args) {
         new Main();
     }
 
     //shows the main menu and lets the user select how they want to edit the To-Do lists
     public Main() {
+        long start = System.currentTimeMillis();
         System.out.println("Imported " + importTodoLists() + " To-Do lists from file");
+        sortList();
         while (true) {
+            System.out.println(System.currentTimeMillis() - start + "ms");
             try {
                 System.out.println("""
-                                                
                         MAIN MENU
                         Enter 1 to create a new To-Do list
                         Enter 2 to view an existing To-Do list
@@ -40,7 +43,7 @@ public class Main {
 
                 switch (option) {
                     case 1:
-                        TodoList createdTodoList = createTodoList(null, AnsiColor.valueOf("DEFAULT"));
+                        TodoList createdTodoList = createTodoList(null, AnsiColor.valueOf("DEFAULT"), false);
                         if(createdTodoList == null){
                             break;
                         }
@@ -79,6 +82,25 @@ public class Main {
         }
     }
 
+    public void sortList(){
+        List<TodoList> newTodoLists = new ArrayList<>();
+        for(TodoList todoList : toDoLists){
+            if(todoList.isPinned()){
+                newTodoLists.add(todoList);
+            }
+        }
+
+        for(TodoList todoList : toDoLists){
+            if(!todoList.isPinned()){
+                newTodoLists.add(todoList);
+            }
+        }
+
+        toDoLists.clear();
+        toDoLists.addAll(newTodoLists);
+
+    }
+
     // CREATING AND MANAGING To-Do LISTS
 
     public boolean isValidName(String name){
@@ -104,31 +126,37 @@ public class Main {
         return true;
     }
 
-    public TodoList createTodoList(String name, AnsiColor color){
-        if(name == null){
+    public TodoList createTodoList(String name, AnsiColor color, Boolean pinned){
+        boolean isAutomated = name != null;
+        //name being not null means its reading it from the file and running the method passing in the name from the file
+        //when running from user input the value is null as the program asks for the name inside the method not outside
+
+        if(!isAutomated){
             System.out.println("What is the name of this To-Do list? Enter an empty string to exit");
             name = scanner.nextLine();
-        }
-
-        if (name.isEmpty()) {
-            return null;
+            if (name.isEmpty()) {
+                return null;
+            }
         }
 
         for(TodoList toDoList : toDoLists){
             if(toDoList.getName().equalsIgnoreCase(name)){
                 printError("A To-Do list with this name already exists, please enter a new name\n");
-                return createTodoList(null, color);
+                return createTodoList(null, color, pinned);
             }
         }
 
         if(isValidName(name) && !name.contains("/") && !name.contains("\\")){
-            TodoList toDoList = new TodoList(name, color);
+            TodoList toDoList = new TodoList(name, color, pinned);
             toDoLists.add(toDoList);
-            saveAllTodoLists();
+            if(!isAutomated){
+                saveAllTodoLists();
+            }
             return toDoList;
         } else {
-            return createTodoList(null, AnsiColor.DEFAULT);
+            return createTodoList(null, AnsiColor.DEFAULT, pinned);
         }
+
     }
 
     public void viewTodoList(TodoList toDoList) {
@@ -141,8 +169,17 @@ public class Main {
             return;
         }
 
-        printItemsInTable(toDoList);
+        toDoList.printItemsInTable();
 
+    }
+
+    public Boolean hasPinnedTodoList(){
+        for(TodoList todoList : toDoLists){
+            if(todoList.isPinned()){
+                return true;
+            }
+        }
+        return false;
     }
 
     public TodoList selectTodoList() {
@@ -152,8 +189,19 @@ public class Main {
         }
 
         System.out.println();
+
+        boolean hasPinned = hasPinnedTodoList();
+
         for (int i = 0; i < toDoLists.size(); i++) {
-            System.out.println("To-Do List " + (i + 1) + " -> " + toDoLists.get(i).getColor().getCode() + toDoLists.get(i).getName() + AnsiColor.RESET.getCode());
+            TodoList list = toDoLists.get(i);
+            if(list.isPinned()){
+                System.out.print(AnsiColor.YELLOW.getCode() + "⚠ URGENT " + AnsiColor.RESET.getCode());
+            }
+
+            System.out.println((!list.isPinned() && hasPinned ? " ".repeat("⚠ URGENT ".length()) : "") +
+                    "To-Do List " + (i + 1) + //To-Do List (i)
+                    " ".repeat((String.valueOf(toDoLists.size())).length() - String.valueOf(i + 1).length()) + //[spaces before arrow]
+                    " -> " + toDoLists.get(i).getColor().getCode() + toDoLists.get(i).getName() + AnsiColor.RESET.getCode()); // -> [list name]
         }
 
         System.out.println("\nPlease enter the number of the To-Do list you wish to view/edit/delete, or enter 0 to exit");
@@ -182,62 +230,19 @@ public class Main {
         }
     }
 
-    public void printItemsInTable(TodoList toDoList) {
-        if (!toDoList.getList().isEmpty()) {
-            System.out.println();
-
-            int longestItemSize = toDoList.longestItem();
-            List<Item> toDoListList = toDoList.getList(); //TODO CHANGE VARIABLE NAME
-
-            //TODO possible to have the same line print headings for both before if statement?
-            //CHECK NEXT COMMIT - this can lead to easy implementation of lines above and below the table
-            //TODO centering the index with numbers greater than 1 digit
-            if (longestItemSize > "Item name    ".length()) {
-                String heading = "Index    Item name" + " ".repeat(longestItemSize - "Item name".length() + 4) + "Item Completion"; //+4 is the gap between the two heading elements
-
-                System.out.println(toDoList.getName());
-                System.out.println("_".repeat(heading.length()));
-
-                System.out.println(heading);
-
-                for (int i = 0; i < toDoListList.size(); i++) {
-                    System.out.println("  " + (i + 1) + "      " + toDoListList.get(i).getName() + " ".repeat(4) + toDoListList.get(i).isCompleted());
-                }
-
-            } else {
-                String heading = "Index    Item name    Item Completion";
-                System.out.println(toDoList.getName());
-                System.out.println("_".repeat(heading.length()));
-
-                System.out.println(heading);
-
-                for (int i = 0; i < toDoListList.size(); i++) {
-                    System.out.println("  " + (i + 1) + "      " + toDoListList.get(i).getName() + " ".repeat(13 - toDoListList.get(i).getName().length()) + toDoListList.get(i).isCompleted());
-                }
-            }
-        }
-    }
-
     // EDITING To-Do LISTS
 
     public void editTodoList(TodoList toDoList) {
-        printItemsInTable(toDoList);
+        toDoList.printItemsInTable();
 
         System.out.println();
 
-        System.out.println("""
-                EDIT TODO LIST
-                0 - exit
-                1 - delete the To-Do list
-                2 - edit To-Do list colour
-                3 - edit To-Do list name
-                4 - add an item to the To-Do list""");
-
-        if (!toDoList.getList().isEmpty()) {
-            System.out.println("""
-                    5 - remove an item from the To-Do list
-                    6 - edit an existing item in the To-Do list""");
-        }
+        System.out.println("EDIT TO-DO LIST" + " ".repeat(14) +  "EDIT ITEMS");
+        System.out.println("0 - exit" + " ".repeat(20) + "5 - add an item to the To-Do list");
+        System.out.println("1 - delete the To-Do list" + " ".repeat(3) + (!toDoList.getList().isEmpty() ? "6 - remove items from the To-Do list" : ""));
+        System.out.println("2 - edit To-Do list colour" + " ".repeat(2) + (!toDoList.getList().isEmpty() ? "7 - edit an existing item in the To-Do list" : ""));
+        System.out.println("3 - edit To-Do list name");
+        System.out.println(toDoList.isPinned() ? "4 - unpin this To-Do list" : "4 - pin this To-Do list");
 
         int option;
         try {
@@ -266,6 +271,10 @@ public class Main {
                 changeTodoListName(toDoList);
                 break;
             case 4:
+                toDoList.setPinned(!toDoList.isPinned()); //set pinned to the opposite of whatever it is
+                saveAllTodoLists();
+                break;
+            case 5:
 
                 System.out.println("Please enter the name of the new item, or an empty string to exit");
                 String name = scanner.nextLine();
@@ -275,7 +284,7 @@ public class Main {
                 editTodoList(toDoList);
                 break;
 
-            case 5:
+            case 6:
 
                 if (!toDoList.getList().isEmpty()) {
                     removeItem(toDoList);
@@ -284,7 +293,7 @@ public class Main {
                 editTodoList(toDoList);
                 break;
 
-            case 6:
+            case 7:
                 if (!toDoList.getList().isEmpty()) {
                     Item foundItem;
 
@@ -370,7 +379,7 @@ public class Main {
 
         if (isInt(name)) {
             printError("An item cannot be called just an integer!");
-            addItem(toDoList, name, completion);
+            editTodoList(toDoList);
             return;
         }
 
@@ -407,7 +416,7 @@ public class Main {
 
         if (isInt(input)) {
             if (Integer.parseInt(input) > toDoList.getList().size() || Integer.parseInt(input) <= 0) {
-                printError("please enter a number between 1 and " + toDoList.getList().size() + "\n");
+                printError("Please enter a number between 1 and " + toDoList.getList().size() + "\n");
                 removeItem(toDoList);
                 saveAllTodoLists();
                 return;
@@ -415,8 +424,8 @@ public class Main {
             toDoList.removeItem(Integer.parseInt(input)); //minuses one in the To-Do List class so not needed here
             saveAllTodoLists();
         } else {
-            if (!toDoList.removeItem(input)) { //TODO fix this so it works with index too
-                printError("an item with this name does not exist, try again");
+            if (!toDoList.removeItem(input)) {
+                printError("An item with this name does not exist, try again");
 
                 List<TodoList> found = existsOnAnotherTodoList(input);
                 if (!found.isEmpty()) {
@@ -442,7 +451,7 @@ public class Main {
             int index = Integer.parseInt(input);
 
             if (index > toDoList.getList().size() || Integer.parseInt(input) <= 0) {
-                printError("please enter a number between 1 and " + toDoList.getList().size() + "\n");
+                printError("Please enter a number between 1 and " + toDoList.getList().size() + "\n");
                 return findCorrectItem(toDoList);
             }
             return toDoList.getList().get(index - 1); //the table starts at 1, 0 is the first item in the list :)
@@ -462,7 +471,7 @@ public class Main {
     // EDITING ITEMS
 
     public void editItem(Item item, TodoList toDoList) {
-        System.out.println("how do you wish to edit " + item.getName() + "?");
+        System.out.println("How do you wish to edit " + item.getName() + "?");
         System.out.println("""
                 0 - back
                 1 - change the name
@@ -560,19 +569,17 @@ public class Main {
             return totalImportedLists;
         }
 
-        List<String> listsNotRead = new ArrayList<>();
         for(int i = 1; i < lines.size(); i++){ //i = 1 to skip the first line as it's the heading of the table
             String[] seperatedList = lines.get(i).split(",");
             String fileName = seperatedList[0];
             String color = seperatedList[1];
-            TodoList toDoList = createTodoList(fileName, AnsiColor.valueOf(color));
+            Boolean pinned = Boolean.parseBoolean(seperatedList[2]);
+            TodoList toDoList = createTodoList(fileName, AnsiColor.valueOf(color), pinned);
 
             Path file = Path.of("To Do Lists/" + fileName + ".csv");
 
             if(readTodoList(toDoList, file)){
                 totalImportedLists++;
-            } else {
-                listsNotRead.add(fileName);
             }
         }
         return totalImportedLists;
@@ -598,7 +605,7 @@ public class Main {
 
     public boolean createIndexFile(){
         try{
-            Files.writeString(indexFile, "Todo List Name, Path, Colour,TBC: Category, Urgency");
+            Files.writeString(indexFile, "Todo List Name, Colour, Pinned");
             return true;
         } catch (IOException e){
             printError("An I/ O error occurred writing to or creating the file, or the text cannot be encoded using UTF-8\n" + e.getMessage());
@@ -613,7 +620,7 @@ public class Main {
 
     public void saveAllTodoLists(){
         try{
-            Files.writeString(indexFile,"Todo List Name, Colour, TBC: Category, Urgency");
+            Files.writeString(indexFile,"Todo List Name, Colour, Pinned");
         } catch (IOException e){
             printError("Error writing to file\n" + e.getMessage());
         }
@@ -628,27 +635,24 @@ public class Main {
     public void deleteAllCSV(Path path){
         try {
             for (Path file : Files.list(path).toList()) { //.list lists files in a path, .toList converts this to a
-                if(file.getFileName().toString().equals("index.csv")){ //ignore deleteing the index.csv
+                if(file.getFileName().toString().equals("index.csv")){ //ignore deleting the index.csv
                     continue;
                 }
                 Files.delete(file);
             }
-        } catch (IOException e){
-            System.out.println(e.getMessage());
+        } catch (IOException exception){
+            printError(exception.getMessage());
         }
     }
 
     public void saveTodoListToFile(TodoList toDoList){
         Path toDoListFile = Path.of("To Do Lists/" + toDoList.getName() + ".csv"); //create To-Do list file
 
-
-
         try{
             //adding the To-Do list to the index
-            Files.writeString(indexFile, "\n" + toDoList.getName() + "," + toDoList.getColor(), StandardOpenOption.APPEND); // StandardOpenOption.APPEND means the file is appended rather than overwritten
+            Files.writeString(indexFile, "\n" + toDoList.getName() + "," + toDoList.getColor() + "," + toDoList.isPinned(), StandardOpenOption.APPEND); // StandardOpenOption.APPEND means the file is appended rather than overwritten
             //create the csv for the To-Do list
             Files.writeString(toDoListFile, "Name,Completion");
-            //TODO add color here when To-Do list color has been implemented
         } catch (IOException e){
             printError("Error writing to file\n" + e.getMessage());
         }

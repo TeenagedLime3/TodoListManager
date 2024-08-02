@@ -1,18 +1,17 @@
 import java.util.ArrayList;
+import java.util.List;
 
 public class TodoList {
     private String name;
     private final ArrayList<Item> list = new ArrayList<>();
     private AnsiColor color;
-
+    private boolean pinned;
     //constructor
-    public TodoList(String name){
-        this.name = name;
-    }
 
-    public TodoList(String name, AnsiColor color){
+    public TodoList(String name, AnsiColor color, Boolean pinned){
         this.name = name;
         this.color = color;
+        this.pinned = pinned;
     }
 
     //getters
@@ -28,13 +27,43 @@ public class TodoList {
         return this.color;
     }
 
-    public int getIndexFromName(String queryString){
-        for(int i = 0; i < this.list.size(); i++){
-            if(this.list.get(i).getName().equalsIgnoreCase(queryString)){
-                return i;
+    public Boolean isPinned(){
+        return this.pinned;
+    }
+
+    public void printItemsInTable() { // TODO: This method should be in the TodoList class
+        if (!this.getList().isEmpty()) {
+            System.out.println();
+
+            int longestItemSize = this.longestItem();
+            List<Item> itemList = this.getList();
+            //TODO possible to have the same line print headings for both before if statement?
+            //CHECK NEXT COMMIT - this can lead to easy implementation of lines above and below the table
+            //TODO centering the index with numbers greater than 1 digit
+            if (longestItemSize > "Item name    ".length()) {
+                String heading = "Index    Item name" + " ".repeat(longestItemSize - "Item name".length() + 4) + "Item Completion"; //+4 is the gap between the two heading elements
+
+                System.out.println(this.getName());
+                System.out.println("_".repeat(heading.length()));
+
+                System.out.println(heading);
+
+                for (int i = 0; i < itemList.size(); i++) {
+                    System.out.println("  " + (i + 1) + "      " + itemList.get(i).getName() + " ".repeat(4) + itemList.get(i).isCompleted());
+                }
+
+            } else {
+                String heading = "Index    Item name    Item Completion";
+                System.out.println(this.getName());
+                System.out.println("_".repeat(heading.length()));
+
+                System.out.println(heading);
+
+                for (int i = 0; i < itemList.size(); i++) {
+                    System.out.println("  " + (i + 1) + "      " + itemList.get(i).getName() + " ".repeat(13 - itemList.get(i).getName().length()) + itemList.get(i).isCompleted());
+                }
             }
         }
-        return -1;
     }
 
     //setters
@@ -44,6 +73,10 @@ public class TodoList {
 
     public void setColor(AnsiColor color){
         this.color = color;
+    }
+
+    public void setPinned(Boolean isPinned){
+        this.pinned = isPinned;
     }
 
     public boolean doesItemExist(String name){

@@ -27,11 +27,9 @@ public class Main {
 
     //shows the main menu and lets the user select how they want to edit the To-Do lists
     public Main() {
-        long start = System.currentTimeMillis();
         System.out.println("Imported " + importTodoLists() + " To-Do lists from file");
         sortList();
         while (true) {
-            System.out.println(System.currentTimeMillis() - start + "ms");
             try {
                 System.out.println("""
                         MAIN MENU
@@ -163,7 +161,7 @@ public class Main {
         if (toDoList == null) {
             return;
         }
-        if (toDoList.getList().isEmpty()) {
+        if (toDoList.isEmpty()) {
             printError("This To-Do list is empty!");
             viewTodoList(selectTodoList());
             return;
@@ -239,8 +237,8 @@ public class Main {
 
         System.out.println("EDIT TO-DO LIST" + " ".repeat(14) +  "EDIT ITEMS");
         System.out.println("0 - exit" + " ".repeat(20) + "5 - add an item to the To-Do list");
-        System.out.println("1 - delete the To-Do list" + " ".repeat(3) + (!toDoList.getList().isEmpty() ? "6 - remove items from the To-Do list" : ""));
-        System.out.println("2 - edit To-Do list colour" + " ".repeat(2) + (!toDoList.getList().isEmpty() ? "7 - edit an existing item in the To-Do list" : ""));
+        System.out.println("1 - delete the To-Do list" + " ".repeat(3) + (!toDoList.isEmpty() ? "6 - remove items from the To-Do list" : ""));
+        System.out.println("2 - edit To-Do list colour" + " ".repeat(2) + (!toDoList.isEmpty() ? "7 - edit an existing item in the To-Do list" : ""));
         System.out.println("3 - edit To-Do list name");
         System.out.println(toDoList.isPinned() ? "4 - unpin this To-Do list" : "4 - pin this To-Do list");
 
@@ -286,7 +284,7 @@ public class Main {
 
             case 6:
 
-                if (!toDoList.getList().isEmpty()) {
+                if (!toDoList.isEmpty()) {
                     removeItem(toDoList);
                     saveAllTodoLists();
                 }
@@ -294,7 +292,7 @@ public class Main {
                 break;
 
             case 7:
-                if (!toDoList.getList().isEmpty()) {
+                if (!toDoList.isEmpty()) {
                     Item foundItem;
 
                     while (true) {
@@ -401,7 +399,7 @@ public class Main {
     }
 
     public void removeItem(TodoList toDoList) {
-        if (toDoList.getList().isEmpty()) {
+        if (toDoList.isEmpty()) {
             printError("This To-Do list is empty!");
             return;
         }
@@ -415,8 +413,8 @@ public class Main {
 
 
         if (isInt(input)) {
-            if (Integer.parseInt(input) > toDoList.getList().size() || Integer.parseInt(input) <= 0) {
-                printError("Please enter a number between 1 and " + toDoList.getList().size() + "\n");
+            if (Integer.parseInt(input) > toDoList.size() || Integer.parseInt(input) <= 0) {
+                printError("Please enter a number between 1 and " + toDoList.size() + "\n");
                 removeItem(toDoList);
                 saveAllTodoLists();
                 return;
@@ -431,7 +429,7 @@ public class Main {
                 if (!found.isEmpty()) {
                     printError("This item exists in other To-Do list(s) named:");
                     for (TodoList toDoListChecking : toDoLists) {
-                        for (Item item : toDoListChecking.getList()) {
+                        for (Item item : toDoListChecking) {
                             if (item.getName().equals(input)) {
                                 System.out.println(toDoListChecking.getName());
                             }
@@ -450,16 +448,16 @@ public class Main {
         try {
             int index = Integer.parseInt(input);
 
-            if (index > toDoList.getList().size() || Integer.parseInt(input) <= 0) {
-                printError("Please enter a number between 1 and " + toDoList.getList().size() + "\n");
+            if (index > toDoList.size() || Integer.parseInt(input) <= 0) {
+                printError("Please enter a number between 1 and " + toDoList.size() + "\n");
                 return findCorrectItem(toDoList);
             }
-            return toDoList.getList().get(index - 1); //the table starts at 1, 0 is the first item in the list :)
+            return toDoList.get(index - 1); //the table starts at 1, 0 is the first item in the list :)
         } catch (NumberFormatException e) {
             if (!toDoList.doesItemExist(input)) {
                 return findCorrectItem(toDoList);
             }
-            for (Item item : toDoList.getList()) {
+            for (Item item : toDoList) {
                 if (item.getName().equals(input)) {
                     return item;
                 }
@@ -657,7 +655,7 @@ public class Main {
             printError("Error writing to file\n" + e.getMessage());
         }
 
-        for(Item item : toDoList.getList()){
+        for(Item item : toDoList){
             try{
                 Files.writeString(toDoListFile, "\n" + item.getName() + "," + item.isCompleted(), StandardOpenOption.APPEND);
             } catch (IOException e){

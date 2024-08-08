@@ -1,15 +1,18 @@
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.List;
 
 public class TodoList extends ArrayList<Item> {
     private String name;
-    private AnsiColor color;
-    private boolean pinned;
+    private AnsiColor color = AnsiColor.DEFAULT;
+    private boolean pinned = false;
+    private static final List<String> BLOCKED_WORDS = List.of("complete", "completed", "incomplete", "exit", "index");
+
 
     //constructor
-    public TodoList(String name, AnsiColor color, boolean pinned){
+    public TodoList(String name){
         this.name = name;
-        this.color = color;
-        this.pinned = pinned;
     }
 
     //getters
@@ -26,37 +29,58 @@ public class TodoList extends ArrayList<Item> {
     }
 
     public void printItemsInTable() {
-        if (!isEmpty()) {
-            System.out.println();
+        if (isEmpty())
+            return;
 
-            int longestItemSize = longestItem();
-            //TODO possible to have the same line print headings for both before if statement?
-            //CHECK NEXT COMMIT - this can lead to easy implementation of lines above and below the table
-            //TODO centering the index with numbers greater than 1 digit
-            if (longestItemSize > "Item name    ".length()) {
-                String heading = "Index    Item name" + " ".repeat(longestItemSize - "Item name".length() + 4) + "Item Completion"; //+4 is the gap between the two heading elements
+        System.out.println();
 
-                System.out.println(getName());
-                System.out.println("_".repeat(heading.length()));
+        int longestItemSize = longestItem();
+        //TODO centering the index with numbers greater than 1 digit
+        if (longestItemSize > "Item name    ".length()) {
+            String heading = "Index    Item name" + " ".repeat(longestItemSize - "Item name".length() + 4) + "Item Completion"; //+4 is the gap between the two heading elements
 
-                System.out.println(heading);
+            System.out.println(getName());
+            System.out.println("_".repeat(heading.length()));
 
-                for (int i = 0; i < size(); i++) {
-                    System.out.println("  " + (i + 1) + "      " + get(i).getName() + " ".repeat(4) + get(i).isCompleted());
-                }
+            System.out.println(heading);
 
-            } else {
-                String heading = "Index    Item name    Item Completion";
-                System.out.println(getName());
-                System.out.println("_".repeat(heading.length()));
+            for (int i = 0; i < size(); i++) {                              //THSP = THIN SPACE (HALF A NORMAL SPACE)
+                System.out.println(((String.valueOf(i+1).length() > 1) ? "  " : "  ") + (i + 1) + "      " + get(i).getName() + " ".repeat(4) + get(i).isCompleted());
+            }
 
-                System.out.println(heading);
+        } else {
+            String heading = "Index    Item name    Item Completion";
+            System.out.println(getName());
+            System.out.println("_".repeat(heading.length()));
 
-                for (int i = 0; i < size(); i++) {
-                    System.out.println("  " + (i + 1) + "      " + get(i).getName() + " ".repeat(13 - get(i).getName().length()) + get(i).isCompleted());
-                }
+            System.out.println(heading);
+
+            for (int i = 0; i < size(); i++) {                              //THSP = THIN SPACE (HALF A NORMAL SPACE)
+                System.out.println(((String.valueOf(i+1).length() > 1) ? "  " : "  ") + (i + 1) + "      " + get(i).getName() + " ".repeat(13 - get(i).getName().length()) + get(i).isCompleted());
             }
         }
+    }
+
+    public static boolean isValidName(String name){
+        if (BLOCKED_WORDS.contains(name.toLowerCase()) || name.contains("/") || name.contains("\\")) {
+            Main.printError("You cannot name a To-Do list complete, completed, incomplete, exit or index, or contain slashes of any kind");
+            return false;
+        }
+
+        //checks if the file can be made without causing errors, characters such as " cannot be in a file name in windows
+        try{
+            Path ignored = Path.of("To Do Lists/" + name + ".csv");
+        } catch (InvalidPathException e){
+            Main.printError("This name is invalid, please use another name");
+            return false;
+        }
+
+        if (Main.isInt(name)) {
+            Main.printError("Please enter a string, not a number");
+            return false;
+        }
+
+        return true;
     }
 
     //setters
@@ -83,16 +107,16 @@ public class TodoList extends ArrayList<Item> {
     }
 
     public void addItem(Item item){
-        this.add(item);
+        add(item);
     }
 
     public void removeItem(Item item){
-        this.remove(item);
+        remove(item);
     }
 
     //attempts to remove the item, if unsuccessful (i.e. the user enters an index that is higher than the max index
     public void removeItem(int index){
-        this.remove(index - 1); //IMPORTANT: users enter 1 not 0 for the first element
+        remove(index - 1); //IMPORTANT: users enter 1 not 0 for the first element
     }
 
     //checks each item in the list, if it exists sets the flag itemExists to true and removes it
@@ -107,6 +131,7 @@ public class TodoList extends ArrayList<Item> {
                 break;
             }
         }
+
         if(itemExists){
             removeItem(itemFound);
         }
